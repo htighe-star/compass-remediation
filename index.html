@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Compass Account Remediation Waterfall</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 40px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 15px; margin-bottom: 30px; }
+    .section { margin-bottom: 40px; }
+
+    .kpi-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .kpi-card {
+      background: white;
+      border-radius: 10px;
+      padding: 24px 28px;
+      flex: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .kpi-card .number {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .kpi-card .label {
+      font-size: 13px;
+      color: #888;
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .kpi-card .sub {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+    .kpi-card.blue .number { color: #1565c0; }
+    .kpi-card.green .number { color: #2e7d32; }
+    .kpi-card.purple .number { color: #6a1b9a; }
+    .kpi-card.orange .number { color: #e65100; }
+
+    .chart-container {
+      width: 100%;
+      max-width: 1100px;
+      height: 520px;
+      margin: 0 auto 20px;
+      background: white;
+      padding: 24px 28px;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .chart-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .summary-table {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      padding: 24px 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      padding: 10px 12px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
+    }
+    tr:last-child td { border-bottom: none; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-green { background: #e8f5e9; color: #2e7d32; }
+    .badge-red { background: #ffebee; color: #c62828; }
+    .badge-blue { background: #e3f2fd; color: #1565c0; }
+    .badge-orange { background: #fff3e0; color: #e65100; }
+    .total-row td { font-weight: 700; border-top: 2px solid #333; }
+    .footnote { font-size: 12px; color: #999; margin-top: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; }
+  </style>
+</head>
+<body>
+  <h1>Compass Account Remediation</h1>
+  <p class="subtitle">Summary of Salesforce cleanup and hierarchy restructuring</p>
+
+  <div class="kpi-row">
+    <div class="kpi-card blue">
+      <div class="number">21,560</div>
+      <div class="label">Total Compass Accounts</div>
+      <div class="sub">Individual SF records + roster</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="number">~10,150</div>
+      <div class="label">Unique Hierarchy Entities</div>
+      <div class="sub">Grouped by top-level parent</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="number">3,182</div>
+      <div class="label">Account Operations</div>
+      <div class="sub">Creates + updates + dedupes + reconfigs</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="number">15%</div>
+      <div class="label">Accounts Touched</div>
+      <div class="sub">3,182 of 21,560</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="chart-container">
+      <div class="chart-title">Account Remediation Waterfall</div>
+      <canvas id="waterfallChart"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="chart-container" style="height: 420px;">
+      <div class="chart-title">Accounts by Hierarchy: 21,560 Individual → ~10,150 Entities</div>
+      <canvas id="hierarchyChart"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="summary-table">
+      <div class="chart-title">Remediation Breakdown</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Action</th>
+            <th class="num">Accounts</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-green">Non-Matches</span></td>
+            <td>Compass customer groups not matching to Salesforce (&gt;$15K spend)</td>
+            <td>Create Accounts</td>
+            <td class="num">40</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">Missing MSAs</span></td>
+            <td>Matched by name/address but SF record not linked to Compass MSA hierarchy</td>
+            <td>Update to correct MSA Account</td>
+            <td class="num">1,921</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-orange">Incorrect MSAs</span></td>
+            <td>Linked to Compass but under the wrong subsidiary</td>
+            <td>Update to correct MSA Account</td>
+            <td class="num">109</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">Reverse Gaps</span></td>
+            <td>Accounts in SF under Compass that Compass didn't include in Jan 2026 roster</td>
+            <td>Verify & reconcile</td>
+            <td class="num">552</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-red">Duplicates</span></td>
+            <td>Duplicate accounts identified and eliminated</td>
+            <td>Merge / delete</td>
+            <td class="num">560</td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="3">Total Remediation Actions</td>
+            <td class="num">3,182</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="footnote">
+    *Hierarchy entities: 10,153 unique top-level parents from Salesforce. Excludes ~2,720 roster-only accounts (not yet in SFDC) 
+    and ~4,660 accounts with deleted/migrated SF IDs, each treated as standalone. Full universe including those: ~17,500 entities.
+  </p>
+
+  <script>
+    // ── Waterfall Chart ──
+    const labels = [
+      'Total Compass\nAccounts',
+      'Non-Matches\nCreated (>$15K)',
+      'Missing MSAs\nUpdated',
+      'Incorrect MSAs\nFixed',
+      'Reverse Gaps\nAddressed',
+      'Duplicates\nEliminated',
+      'Accounts\nReconfigured',
+      'Total\nRemediation'
+    ];
+
+    const values    = [21560, 40, 1921, 109, 552, -560, 1089, 4271];
+    const isTotalBar = [true,  false, false, false, false, false, false, true];
+
+    // Colors
+    const totalColor  = '#1565c0';
+    const addColor    = '#4caf50';
+    const removeColor = '#ef5350';
+    const endColor    = '#37474f';
+
+    // Build stacked datasets for waterfall effect
+    let running = 0;
+    const bases = [], ups = [], downs = [], totalBars = [];
+
+    values.forEach((v, i) => {
+      if (i === 0) {
+        bases.push(0); ups.push(0); downs.push(0); totalBars.push(v);
+        running = 0;
+      } else if (i === values.length - 1) {
+        bases.push(0); ups.push(0); downs.push(0); totalBars.push(v);
+      } else if (v >= 0) {
+        bases.push(running); ups.push(v); downs.push(0); totalBars.push(0);
+        running += v;
+      } else {
+        bases.push(running + v); ups.push(0); downs.push(-v); totalBars.push(0);
+        running += v;
+      }
+    });
+
+    new Chart(document.getElementById('waterfallChart'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Base',
+            data: bases,
+            backgroundColor: 'transparent',
+            borderWidth: 0,
+            stack: 's0'
+          },
+          {
+            label: 'Increase',
+            data: ups,
+            backgroundColor: addColor,
+            borderRadius: 4,
+            stack: 's0'
+          },
+          {
+            label: 'Decrease',
+            data: downs,
+            backgroundColor: removeColor,
+            borderRadius: 4,
+            stack: 's0'
+          },
+          {
+            label: 'Total',
+            data: totalBars,
+            backgroundColor: (ctx) => ctx.dataIndex === 0 ? totalColor : endColor,
+            borderRadius: 4,
+            stack: 's0'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const idx = ctx.dataIndex;
+                const v = values[idx];
+                if (isTotalBar[idx]) return v.toLocaleString() + ' accounts';
+                return (v >= 0 ? '+' : '') + v.toLocaleString() + ' accounts';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              font: { size: 11 },
+              callback: function(val, idx) {
+                const l = labels[idx];
+                return l.split('\n');
+              }
+            }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: { color: '#f0f0f0' },
+            ticks: { callback: v => v.toLocaleString() }
+          }
+        }
+      },
+      plugins: [{
+        afterDraw: function(chart) {
+          const ctx2 = chart.ctx;
+          ctx2.save();
+          ctx2.font = 'bold 12px -apple-system, sans-serif';
+          ctx2.textAlign = 'center';
+
+          chart.data.datasets.forEach((ds, di) => {
+            if (ds.label === 'Base') return;
+            chart.getDatasetMeta(di).data.forEach((bar, i) => {
+              const v = ds.data[i];
+              if (!v) return;
+              const orig = values[i];
+              let label;
+              if (isTotalBar[i]) {
+                label = orig.toLocaleString();
+              } else {
+                label = (orig >= 0 ? '+' : '') + orig.toLocaleString();
+              }
+              ctx2.fillStyle = '#333';
+              ctx2.fillText(label, bar.x, bar.y - 6);
+            });
+          });
+          ctx2.restore();
+        }
+      }]
+    });
+
+    // ── Hierarchy Grouping Chart ──
+    const hierLabels = [
+      'Individual\nAccounts',
+      'Multi-Account\nHierarchies',
+      'Standalone\nSF Accounts',
+      'Unique\nEntities'
+    ];
+    const hierValues = [21560, 1421, 8732, 10153];
+    const hierColors = ['#1565c0', '#7b1fa2', '#37474f', '#2e7d32'];
+
+    const hierBases = [0, 0, 0, 0];
+    const hierBars  = hierValues.slice();
+
+    new Chart(document.getElementById('hierarchyChart'), {
+      type: 'bar',
+      data: {
+        labels: hierLabels,
+        datasets: [{
+          data: hierBars,
+          backgroundColor: hierColors,
+          borderRadius: 4,
+          barPercentage: 0.65
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ctx.raw.toLocaleString() + ' accounts'
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#f0f0f0' },
+            ticks: { callback: v => v.toLocaleString() }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 12 },
+              callback: function(val, idx) {
+                return hierLabels[idx].split('\n');
+              }
+            }
+          }
+        }
+      },
+      plugins: [{
+        afterDraw: function(chart) {
+          const ctx2 = chart.ctx;
+          ctx2.save();
+          ctx2.font = 'bold 12px -apple-system, sans-serif';
+          ctx2.textBaseline = 'middle';
+          ctx2.fillStyle = '#333';
+          chart.getDatasetMeta(0).data.forEach((bar, i) => {
+            const v = hierValues[i];
+            ctx2.fillText(v.toLocaleString(), bar.x + 8, bar.y);
+          });
+          ctx2.restore();
+        }
+      }]
+    });
+  </script>
+</body>
+</html>

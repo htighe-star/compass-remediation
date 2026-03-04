@@ -117,7 +117,7 @@
 
   <div class="kpi-row">
     <div class="kpi-card blue">
-      <div class="number">21,180</div>
+      <div class="number">22,080</div>
       <div class="label">Starting Compass Accounts</div>
       <div class="sub">Pre-remediation total</div>
     </div>
@@ -199,7 +199,7 @@
   </div>
 
   <p class="footnote">
-    *Starting total of 21,180 reflects all Compass-affiliated Salesforce records plus roster accounts prior to remediation.
+    *Starting total of 22,080 reflects all Compass-affiliated Salesforce records plus roster accounts prior to remediation.
     3,182 total operations include account creation, MSA corrections, reverse gap reconciliation, and duplicate merges.
   </p>
 
@@ -207,30 +207,35 @@
     const labels = [
       'Starting\nCompass Accounts',
       'Accounts\nCreated',
+      'Hierarchy\nUpdated',
       'Duplicates\nEliminated',
       'Net Compass\nAccounts'
     ];
 
-    const values     = [21180, 40, -560, 21560];
-    const isTotalBar = [true,  false, false, true];
+    const values     = [22080, 40, 1099, -560, 21560];
+    const isTotalBar = [true,  false, false, false, true];
+    const isNeutral  = [false, false, true,  false, false];
 
-    const totalColor  = '#1565c0';
-    const addColor    = '#4caf50';
-    const removeColor = '#ef5350';
-    const endColor    = '#37474f';
+    const totalColor   = '#1565c0';
+    const addColor     = '#4caf50';
+    const removeColor  = '#ef5350';
+    const neutralColor = '#ff9800';
+    const endColor     = '#37474f';
 
     let running = 0;
-    const bases = [], ups = [], downs = [], totalBars = [];
+    const bases = [], ups = [], downs = [], neutralBars = [], totalBars = [];
 
     values.forEach((v, i) => {
       if (isTotalBar[i]) {
-        bases.push(0); ups.push(0); downs.push(0); totalBars.push(v);
+        bases.push(0); ups.push(0); downs.push(0); neutralBars.push(0); totalBars.push(v);
         running = v;
+      } else if (isNeutral[i]) {
+        bases.push(running); ups.push(0); downs.push(0); neutralBars.push(v); totalBars.push(0);
       } else if (v >= 0) {
-        bases.push(running); ups.push(v); downs.push(0); totalBars.push(0);
+        bases.push(running); ups.push(v); downs.push(0); neutralBars.push(0); totalBars.push(0);
         running += v;
       } else {
-        bases.push(running + v); ups.push(0); downs.push(-v); totalBars.push(0);
+        bases.push(running + v); ups.push(0); downs.push(-v); neutralBars.push(0); totalBars.push(0);
         running += v;
       }
     });
@@ -242,6 +247,7 @@
         datasets: [
           { label: 'Base', data: bases, backgroundColor: 'transparent', borderWidth: 0, stack: 's0' },
           { label: 'Increase', data: ups, backgroundColor: addColor, borderRadius: 6, stack: 's0' },
+          { label: 'Update', data: neutralBars, backgroundColor: neutralColor, borderRadius: 6, stack: 's0' },
           { label: 'Decrease', data: downs, backgroundColor: removeColor, borderRadius: 6, stack: 's0' },
           {
             label: 'Total',
@@ -273,6 +279,7 @@
                 const idx = ctx.dataIndex;
                 const v = values[idx];
                 if (isTotalBar[idx]) return v.toLocaleString() + ' accounts';
+                if (isNeutral[idx]) return v.toLocaleString() + ' accounts updated';
                 return (v >= 0 ? '+' : '') + v.toLocaleString() + ' accounts';
               }
             }
@@ -310,6 +317,9 @@
               let lbl;
               if (isTotalBar[i]) {
                 ctx2.font = 'bold 16px -apple-system, sans-serif';
+                lbl = orig.toLocaleString();
+              } else if (isNeutral[i]) {
+                ctx2.font = 'bold 14px -apple-system, sans-serif';
                 lbl = orig.toLocaleString();
               } else {
                 ctx2.font = 'bold 14px -apple-system, sans-serif';

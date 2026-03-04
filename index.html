@@ -112,12 +112,12 @@
   </style>
 </head>
 <body>
-  <h1>Compass Account Remediation</h1>
+  <h1>Compass Account Remediation Items</h1>
   <p class="subtitle">Summary of Salesforce cleanup and hierarchy restructuring</p>
 
   <div class="kpi-row">
     <div class="kpi-card blue">
-      <div class="number">22,120</div>
+      <div class="number">21,180</div>
       <div class="label">Starting Compass Accounts</div>
       <div class="sub">Pre-remediation total</div>
     </div>
@@ -132,7 +132,7 @@
       <div class="sub">Merged or deleted</div>
     </div>
     <div class="kpi-card purple">
-      <div class="number">21,600</div>
+      <div class="number">21,560</div>
       <div class="label">Net Compass Accounts</div>
       <div class="sub">Post-remediation total</div>
     </div>
@@ -140,7 +140,7 @@
 
   <div class="section">
     <div class="chart-container">
-      <div class="chart-title">Compass Account Waterfall</div>
+      <div class="chart-title">Compass Account Actions Waterfall</div>
       <canvas id="waterfallChart"></canvas>
     </div>
   </div>
@@ -199,7 +199,7 @@
   </div>
 
   <p class="footnote">
-    *Starting total of 22,120 reflects all Compass-affiliated Salesforce records plus roster accounts prior to remediation.
+    *Starting total of 21,180 reflects all Compass-affiliated Salesforce records plus roster accounts prior to remediation.
     3,182 total operations include account creation, MSA corrections, reverse gap reconciliation, and duplicate merges.
   </p>
 
@@ -211,7 +211,7 @@
       'Net Compass\nAccounts'
     ];
 
-    const values     = [22120, 40, -560, 21600];
+    const values     = [21180, 40, -560, 21560];
     const isTotalBar = [true,  false, false, true];
 
     const totalColor  = '#1565c0';
